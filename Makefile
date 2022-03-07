@@ -37,7 +37,8 @@ override SIM_ARGS += --with-dramsim3
 endif
 
 TIMELOG = $(BUILD_DIR)/time.log
-TIME_CMD = time -a -o $(TIMELOG)
+# TIME_CMD = time -a -o $(TIMELOG)
+TIME_CMD ?=
 
 # remote machine with more cores to speedup c++ build
 REMOTE ?= localhost
