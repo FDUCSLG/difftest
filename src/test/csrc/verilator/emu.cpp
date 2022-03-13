@@ -156,11 +156,12 @@ Emulator::Emulator(int argc, const char *argv[]):
   if (args.enable_jtag) { 
     jtag = new remote_bitbang_t(23334);
   }
-  // init core
-  reset_ncycles(10);
 
   // init ram
   init_ram(args.image);
+
+  // init core
+  reset_ncycles(10);
 
   difftest_init();
   init_device();

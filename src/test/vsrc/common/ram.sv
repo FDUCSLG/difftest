@@ -44,9 +44,17 @@ module RAMHelper1 import common::*;
 	assign iresp.data = ireq.addr[2] ? (ram_read_helper('1, iidx) >> 32) : (ram_read_helper('1, iidx) & 'hffffffff);
 	assign dresp.data = ram_read_helper('1, didx);
 	always_ff @(posedge clk) begin
-		if (dreq.valid && dreq.strobe != 0)
+		if (ireq.valid && iidx >= 'h10000000) begin
+			$display("Memory address %x out of range!", ireq.addr);
+			$finish;
+		end
+		if (dreq.valid && dreq.strobe != 0) begin
+			if (didx >= 'h10000000) begin
+				$display("Memory address %x out of range!", dreq.addr);
+				$finish;
+			end
 			ram_write_helper(didx, dreq.data, wmask, '1);
-		// $display("%x", didx);
+		end
 	end
 endmodule
 
@@ -130,6 +138,10 @@ module RAMHelper2 import common::*;
 			end
 			READ: begin
 				// $display("\tread: %x %x", addr, oresp.data);
+				if (idx >= 'h10000000) begin
+					$display("Memory address %x out of range!", addr);
+					$finish;
+				end
 				unique if (oresp.last)
 					state <= NONE;
 				else begin
@@ -139,6 +151,10 @@ module RAMHelper2 import common::*;
 			end
 			WRITE: begin
 				// $display("\twrite: %x %x %b", addr, oreq.data, oreq.strobe);
+				if (idx >= 'h10000000) begin
+					$display("Memory address %x out of range!", addr);
+					$finish;
+				end
 				unique case (addr)
 				64'h40600004: if (oreq.strobe[4]) begin
 					$fwrite(32'h8000_0001, "%c", oreq.data[39:32]); // stdout

@@ -96,8 +96,8 @@ VERILATOR_FLAGS =                   \
   --output-split-cfuncs 30000 \
   --trace-fst --trace-structs \
 	--no-trace-params \
-# 	-Wno-STMTDLY \
-# 	-Wno-WIDTH           \
+	-Wno-STMTDLY \
+	-Wno-WIDTH           \
 
 EMU_MK := $(BUILD_DIR)/emu-compile/V$(EMU_TOP).mk
 EMU_DEPS := $(EMU_VFILES) $(EMU_CXXFILES)
