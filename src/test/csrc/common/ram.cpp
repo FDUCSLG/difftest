@@ -203,9 +203,13 @@ extern "C" uint64_t ram_read_helper(uint8_t en, uint64_t rIdx) {
 
 extern "C" void ram_write_helper(uint64_t wIdx, uint64_t wdata, uint64_t wmask, uint8_t wen) {
   if (wen && ram) {
-    if (wIdx >= EMU_RAM_SIZE / sizeof(uint64_t)) {
-      printf("ERROR: ram wIdx = 0x%lx out of bound!\n", wIdx);
-      assert(wIdx < EMU_RAM_SIZE / sizeof(uint64_t));
+    try
+    {
+      ASSERT(wIdx < EMU_RAM_SIZE / sizeof(uint64_t), "ERROR: ram wIdx = 0x%lx out of bound!\n", wIdx);
+    }
+    catch(std::logic_error&)
+    {
+      return;
     }
     pthread_mutex_lock(&ram_mutex);
     ram[wIdx] = (ram[wIdx] & ~wmask) | (wdata & wmask);

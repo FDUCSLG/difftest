@@ -19,6 +19,9 @@ import "DPI-C" function int get_switch();
 // latency
 
 `define LATENCY
+`ifndef RANDOMIZE_DELAY
+`define RANDOMIZE_DELAY 31
+`endif
 
 /* verilator lint_off WIDTH */
 
@@ -45,14 +48,14 @@ module RAMHelper1 import common::*;
 	assign dresp.data = ram_read_helper('1, didx);
 	always_ff @(posedge clk) begin
 		if (ireq.valid && iidx >= 'h10000000) begin
-			$display("Memory address %x out of range!", ireq.addr);
+			$display("Load address %x out of range!", ireq.addr);
 			$finish;
 		end
+		// if (dreq.valid && didx >= 'h10000000) begin
+		// 	$display("Memory address %x out of range!", dreq.addr);
+		// 	$finish;
+		// end
 		if (dreq.valid && dreq.strobe != 0) begin
-			if (didx >= 'h10000000) begin
-				$display("Memory address %x out of range!", dreq.addr);
-				$finish;
-			end
 			ram_write_helper(didx, dreq.data, wmask, '1);
 		end
 	end
@@ -87,7 +90,7 @@ module RAMHelper2 import common::*;
 			NONE: begin
 				if (oreq.valid) begin
 					`ifdef LATENCY
-					count_down <= ($random() & 127) + 4;
+					count_down <= ($random() % `RANDOMIZE_DELAY) + 2;
 					state <= WAIT;
 					`else
 					state <= oreq.is_write ? WRITE : READ;
@@ -118,10 +121,10 @@ module RAMHelper2 import common::*;
 					addr <= oreq.addr;
 					count_down <= oreq.len;
 					size <= 1 << oreq.size;
-					if ((oreq.addr & ((1 << oreq.size) - 1)) != 0) begin
-						$display("Memory address misaligned.\n");
-						$finish();
-					end
+					// if ((oreq.addr & ((1 << oreq.size) - 1)) != 0) begin
+					// 	$display("Memory address misaligned.\n");
+					// 	$finish();
+					// end
 					unique case (oreq.burst)
 					AXI_BURST_FIXED: begin
 						wrap1 <= oreq.addr;
@@ -139,7 +142,7 @@ module RAMHelper2 import common::*;
 			READ: begin
 				// $display("\tread: %x %x", addr, oresp.data);
 				if (idx >= 'h10000000) begin
-					$display("Memory address %x out of range!", addr);
+					$display("Load address %x out of range!", addr);
 					$finish;
 				end
 				unique if (oresp.last)
@@ -151,10 +154,10 @@ module RAMHelper2 import common::*;
 			end
 			WRITE: begin
 				// $display("\twrite: %x %x %b", addr, oreq.data, oreq.strobe);
-				if (idx >= 'h10000000) begin
-					$display("Memory address %x out of range!", addr);
-					$finish;
-				end
+				// if (idx >= 'h10000000) begin
+				// 	$display("Memory address %x out of range!", addr);
+				// 	$finish;
+				// end
 				unique case (addr)
 				64'h40600004: if (oreq.strobe[4]) begin
 					$fwrite(32'h8000_0001, "%c", oreq.data[39:32]); // stdout

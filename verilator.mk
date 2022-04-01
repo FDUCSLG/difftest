@@ -80,6 +80,8 @@ ifeq ($(USE_BIN),1)
 EMU_CXXFLAGS += -DUSE_BIN
 endif
 
+DELAY ?= 31
+
 # --trace
 VERILATOR_FLAGS =                   \
   --top-module $(EMU_TOP)           \
@@ -88,7 +90,7 @@ VERILATOR_FLAGS =                   \
   +define+RANDOMIZE_REG_INIT        \
   +define+RANDOMIZE_MEM_INIT        \
   +define+RANDOMIZE_GARBAGE_ASSIGN  \
-  +define+RANDOMIZE_DELAY=0         \
+  +define+RANDOMIZE_DELAY=$(DELAY)         \
   $(VEXTRA_FLAGS)                   \
   --assert                          \
   --stats-vars                      \
@@ -96,8 +98,8 @@ VERILATOR_FLAGS =                   \
   --output-split-cfuncs 30000 \
   --trace-fst --trace-structs \
 	--no-trace-params \
-	-Wno-STMTDLY \
-	-Wno-WIDTH           \
+# 	-Wno-STMTDLY \
+# 	-Wno-WIDTH           \
 
 EMU_MK := $(BUILD_DIR)/emu-compile/V$(EMU_TOP).mk
 EMU_DEPS := $(EMU_VFILES) $(EMU_CXXFILES)

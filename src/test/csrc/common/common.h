@@ -24,6 +24,7 @@
 #include <cassert>
 #include <pthread.h>
 #include "../../../../config/config.h"
+#include <stdexcept>
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -42,6 +43,9 @@
 extern int assert_count;
 void assert_init();
 void assert_finish();
+
+extern "C" void xs_assert(long long line);
+#define ASSERT(expr, ...) ({if (!(expr)) {eprintf(__VA_ARGS__); xs_assert(__LINE__); throw std::logic_error("Assertion failed");}})
 
 extern int signal_num;
 void sig_handler(int signo);
