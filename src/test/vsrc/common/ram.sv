@@ -48,7 +48,7 @@ module RAMHelper1 import common::*;
 	assign dresp.data = ram_read_helper('1, didx);
 	always_ff @(posedge clk) begin
 		if (ireq.valid && iidx >= 'h10000000) begin
-			$display("Load address %x out of range!", ireq.addr);
+			$display("ERROR: Load address %x out of range!\n", ireq.addr);
 			$finish;
 		end
 		// if (dreq.valid && didx >= 'h10000000) begin
@@ -68,6 +68,7 @@ module RAMHelper2 import common::*;
 	output  cbus_resp_t oresp
 );
 	
+	cbus_req_t saved_oreq;
 	enum i2 {NONE, WAIT, READ, WRITE} state;
 	i8 count_down;
 	i4 size;
@@ -81,7 +82,7 @@ module RAMHelper2 import common::*;
 
 	always_ff @(posedge clk) begin
 		if (~reset) begin
-			if (cyc_cnt == 10000) begin
+			if (cyc_cnt == 20000) begin
 				ms_cnt <= ms_cnt + 1;
 				cyc_cnt <= 0;
 			end else
@@ -89,6 +90,7 @@ module RAMHelper2 import common::*;
 			unique case (state)
 			NONE: begin
 				if (oreq.valid) begin
+					saved_oreq <= oreq;
 					`ifdef LATENCY
 					count_down <= ($random() % `RANDOMIZE_DELAY) + 2;
 					state <= WAIT;
@@ -98,7 +100,7 @@ module RAMHelper2 import common::*;
 					count_down <= oreq.len;
 					size <= 1 << oreq.size;
 					if ((oreq.addr & ((1 << oreq.size) - 1)) != 0) begin
-						$display("Memory address misaligned.\n");
+						$display("ERROR: Memory address misaligned.\n");
 						$finish();
 					end
 					unique case (oreq.burst)
@@ -116,6 +118,10 @@ module RAMHelper2 import common::*;
 				end
 			end
 			WAIT: begin
+				if (oreq != saved_oreq) begin
+					$display("ERROR: Unexpected CBus request modification.\n");
+					$finish();
+				end
 				unique if (count_down == 0) begin
 					state <= oreq.is_write ? WRITE : READ;
 					addr <= oreq.addr;
@@ -140,9 +146,18 @@ module RAMHelper2 import common::*;
 					count_down <= count_down - 1;
 			end
 			READ: begin
+				if (oreq.valid != saved_oreq.valid || 
+					oreq.is_write != saved_oreq.is_write ||
+					oreq.size != saved_oreq.size ||
+					oreq.addr != saved_oreq.addr ||
+					oreq.len != saved_oreq.len ||
+					oreq.burst != saved_oreq.burst) begin
+					$display("ERROR: Unexpected CBus request modification.\n");
+					$finish();
+				end
 				// $display("\tread: %x %x", addr, oresp.data);
 				if (idx >= 'h10000000) begin
-					$display("Load address %x out of range!", addr);
+					$display("ERROR: Load address %x out of range!\n", addr);
 					$finish;
 				end
 				unique if (oresp.last)
@@ -153,6 +168,15 @@ module RAMHelper2 import common::*;
 				end
 			end
 			WRITE: begin
+				if (oreq.valid != saved_oreq.valid || 
+					oreq.is_write != saved_oreq.is_write ||
+					oreq.size != saved_oreq.size ||
+					oreq.addr != saved_oreq.addr ||
+					oreq.len != saved_oreq.len ||
+					oreq.burst != saved_oreq.burst) begin
+					$display("ERROR: Unexpected CBus request modification.\n");
+					$finish();
+				end
 				// $display("\twrite: %x %x %b", addr, oreq.data, oreq.strobe);
 				// if (idx >= 'h10000000) begin
 				// 	$display("Memory address %x out of range!", addr);
@@ -175,7 +199,7 @@ module RAMHelper2 import common::*;
 			end
 			endcase
 		end else
-			{state, count_down, cyc_cnt, ms_cnt, addr, size} <= '0;
+			{state, count_down, cyc_cnt, ms_cnt, addr, size, saved_oreq} <= '0;
 	end
 
 	always_comb begin
