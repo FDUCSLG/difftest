@@ -82,7 +82,7 @@ module RAMHelper2 import common::*;
 
 	always_ff @(posedge clk) begin
 		if (~reset) begin
-			if (cyc_cnt == 20000) begin
+			if (cyc_cnt == 20) begin
 				ms_cnt <= ms_cnt + 1;
 				cyc_cnt <= 0;
 			end else

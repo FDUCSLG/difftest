@@ -98,6 +98,7 @@ VERILATOR_FLAGS =                   \
   --output-split-cfuncs 30000 \
   --trace-fst --trace-structs \
 	--no-trace-params \
+	-y ../vsrc/ram \
 # 	-Wno-STMTDLY \
 # 	-Wno-WIDTH           \
 
