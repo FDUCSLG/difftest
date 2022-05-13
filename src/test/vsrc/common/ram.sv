@@ -23,6 +23,10 @@ import "DPI-C" function int get_switch();
 `define RANDOMIZE_DELAY 31
 `endif
 
+`ifndef BENCHMARK
+`define BENCHMARK 0
+`endif
+
 /* verilator lint_off WIDTH */
 
 module RAMHelper1 import common::*;
@@ -92,6 +96,7 @@ module RAMHelper2 import common::*;
 				if (oreq.valid) begin
 					saved_oreq <= oreq;
 					`ifdef LATENCY
+					if (`BENCHMARK) count_down <= 1000; else
 					count_down <= ($random() % `RANDOMIZE_DELAY) + 2;
 					state <= WAIT;
 					`else
