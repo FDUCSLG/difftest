@@ -82,6 +82,8 @@ endif
 
 DELAY ?= 31
 
+BENCHMARK ?= 0
+
 # --trace
 VERILATOR_FLAGS =                   \
   --top-module $(EMU_TOP)           \
