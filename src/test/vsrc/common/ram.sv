@@ -69,7 +69,8 @@ module RAMHelper2 import common::*;
 (
 	input logic clk, reset,
 	input cbus_req_t  oreq,
-	output  cbus_resp_t oresp
+	output  cbus_resp_t oresp,
+	output logic trint, swint, exint
 );
 	
 	cbus_req_t saved_oreq;
@@ -84,13 +85,19 @@ module RAMHelper2 import common::*;
 		assign wmask[i * 8 + 7 -: 8] = {8{oreq.strobe[i]}};
 	end
 
+	u64 mtime, mtimecmp;
+	logic msip;
+
 	always_ff @(posedge clk) begin
 		if (~reset) begin
-			if (cyc_cnt == 20) begin
+			if (cyc_cnt == 25) begin
 				ms_cnt <= ms_cnt + 1;
+				mtime <= mtime + 1;
 				cyc_cnt <= 0;
 			end else
 				cyc_cnt <= cyc_cnt + 1;
+			trint <= mtime > mtimecmp;
+			swint <= msip;
 			unique case (state)
 			NONE: begin
 				if (oreq.valid) begin
@@ -123,7 +130,16 @@ module RAMHelper2 import common::*;
 				end
 			end
 			WAIT: begin
-				if (oreq != saved_oreq) begin
+				// if (oreq != saved_oreq) begin
+				// 	$display("ERROR: Unexpected CBus request modification.\n");
+				// 	$finish();
+				// end
+				if (oreq.valid != saved_oreq.valid || 
+					oreq.is_write != saved_oreq.is_write ||
+					oreq.size != saved_oreq.size ||
+					oreq.addr != saved_oreq.addr ||
+					oreq.len != saved_oreq.len ||
+					oreq.burst != saved_oreq.burst) begin
 					$display("ERROR: Unexpected CBus request modification.\n");
 					$finish();
 				end
@@ -193,6 +209,9 @@ module RAMHelper2 import common::*;
 					$fflush(32'h8000_0001);
 				end
 				64'h23333000: if (oreq.data == 64'h233 && oreq.strobe == '1) $display("Pass!");
+				64'h38000000: msip <= oreq.data[0];
+				64'h38004000: mtimecmp <= oreq.data;
+				64'h3800bff8: mtime <= oreq.data;
 				default: if (addr != 64'h4060000c) ram_write_helper(idx, oreq.data, wmask, '1);
 				endcase
 				unique if (oresp.last)
@@ -203,8 +222,13 @@ module RAMHelper2 import common::*;
 				end
 			end
 			endcase
-		end else
+		end else begin
 			{state, count_down, cyc_cnt, ms_cnt, addr, size, saved_oreq} <= '0;
+			mtime <= '0;
+			mtimecmp <= '1;
+			msip <= '0;
+			{trint, swint, exint} <= '0;
+		end
 	end
 
 	always_comb begin
@@ -214,7 +238,9 @@ module RAMHelper2 import common::*;
 			oresp.last = count_down == 0;
 			unique case (addr)
 			64'h40600008: oresp.data = '0;
-			64'h3800bff8: oresp.data = ms_cnt;
+			64'h38000000: oresp.data = {63'0, msip};
+			64'h38004000: oresp.data = mtimecmp;
+			64'h3800bff8: oresp.data = mtime;
 			64'h20003000: oresp.data = ms_cnt;
 			64'h23333008: oresp.data = {'0, get_switch()}; // switch
 			default: oresp.data = ram_read_helper('1, idx);

@@ -38,7 +38,7 @@ extern "C" int get_switch() {
   if (s == NULL)
     return 0;
   if (strcmp(s, "all") == 0)
-    return 31;
+    return 63;
   if (strcmp(s, "paint") == 0)
     return 1;
   if (strcmp(s, "coremark") == 0)
@@ -49,6 +49,8 @@ extern "C" int get_switch() {
     return 8;
   if (strcmp(s, "conwaygame") == 0)
     return 16;
+  if (strcmp(s, "sys") == 0)
+    return 32;
   return 0;
 }
 
